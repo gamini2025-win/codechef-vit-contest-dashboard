@@ -1,15 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useContestStore } from '@/store/contestStore'
 import { Topbar } from '@/components/ui/Topbar'
 import { AnimatedBackground, FloatingShapes } from '@/components/ui/AnimatedBackground'
+import { CommandPalette } from '@/components/ui/CommandPalette'
 import { Dashboard } from '@/components/dashboard/Dashboard'
 import { Participants } from '@/components/participants/Participants'
 import { Submissions } from '@/components/submissions/Submissions'
 import { Leaderboard } from '@/components/leaderboard/Leaderboard'
 import { PROBLEMS } from '@/lib/mockData'
-import type { Submission, Verdict, Language } from '@/types'
+import type { Submission, Verdict, Language, Participant } from '@/types'
 
 const NAMES_POOL = [
   'Arjun Sharma', 'Priya Patel', 'Rahul Kumar', 'Sneha Reddy', 'Vikram Singh',
@@ -40,9 +41,11 @@ function generateLiveSub(): Submission {
 }
 
 export default function Home() {
-  const { initData, addSubmission } = useContestStore()
+  const { initData, addSubmission, participants, frozenSnapshot, frozen } = useContestStore()
   const [activeTab, setActiveTab] = useState('Dashboard')
   const [mounted, setMounted] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(false)
+  const [participantSearch, setParticipantSearch] = useState('')
 
   useEffect(() => {
     setMounted(true)
@@ -57,6 +60,49 @@ export default function Home() {
     return () => clearInterval(id)
   }, [addSubmission])
 
+  // Global Cmd+K / Ctrl+K listener
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setPaletteOpen((o) => !o)
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [])
+
+  // Export CSV event from command palette
+  useEffect(() => {
+    function handleExport() {
+      const displayList: Participant[] = frozen && frozenSnapshot ? frozenSnapshot : participants
+      const headers = ['Rank', 'Name', 'Institution', 'Solved', 'Penalty', ...PROBLEMS.map((p) => p.name)]
+      const rows = displayList.map((p) => {
+        const probCells = PROBLEMS.map((prob) => {
+          const r = p.problemResults[prob.id]
+          if (!r || r.attempts === 0) return '-'
+          if (r.accepted) return `AC (${r.firstAcTime}m)`
+          return `WA x${r.attempts}`
+        })
+        return [p.rank, p.name, p.institution, p.solved, p.penalty, ...probCells]
+      })
+      const csv = [headers, ...rows].map((r) => r.join(',')).join('\n')
+      const blob = new Blob([csv], { type: 'text/csv' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `leaderboard${frozen ? '-frozen' : ''}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    }
+    window.addEventListener('codechef:export-csv', handleExport)
+    return () => window.removeEventListener('codechef:export-csv', handleExport)
+  }, [participants, frozenSnapshot, frozen])
+
+  const handleSearchParticipant = useCallback((name: string) => {
+    setParticipantSearch(name)
+  }, [])
+
   if (!mounted) return null
 
   return (
@@ -64,16 +110,32 @@ export default function Home() {
       <AnimatedBackground />
       <FloatingShapes />
 
-      <div className="relative z-10">
-        <Topbar activeTab={activeTab} onTabChange={setActiveTab} />
+      <div className="relative z-10 flex flex-col min-h-screen">
+        <Topbar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          onOpenPalette={() => setPaletteOpen(true)}
+        />
 
-        <main className="max-w-screen-2xl mx-auto px-4 py-6">
+        <main className="max-w-screen-2xl mx-auto w-full px-4 py-6">
           {activeTab === 'Dashboard' && <Dashboard />}
-          {activeTab === 'Participants' && <Participants />}
+          {activeTab === 'Participants' && (
+            <Participants
+              externalSearch={participantSearch}
+              onExternalSearchConsumed={() => setParticipantSearch('')}
+            />
+          )}
           {activeTab === 'Submissions' && <Submissions />}
           {activeTab === 'Leaderboard' && <Leaderboard />}
         </main>
       </div>
+
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        onTabChange={setActiveTab}
+        onSearchParticipant={handleSearchParticipant}
+      />
     </div>
   )
 }

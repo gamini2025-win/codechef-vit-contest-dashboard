@@ -4,12 +4,14 @@ import { useContestStore } from '@/store/contestStore'
 import { Download, Lock } from 'lucide-react'
 import type { Participant } from '@/types'
 import { PROBLEMS } from '@/lib/mockData'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useRef, useEffect, useState } from 'react'
 
 const MEDALS = ['🥇', '🥈', '🥉']
 const ROW_HIGHLIGHTS = [
-  'bg-amber-500/10 border-l-2 border-amber-400',
-  'bg-gray-400/10 border-l-2 border-gray-400',
-  'bg-orange-600/10 border-l-2 border-orange-500',
+  'border-l-2 border-amber-400',
+  'border-l-2 border-gray-400',
+  'border-l-2 border-orange-500',
 ]
 
 function ProblemCell({ result }: {
@@ -28,11 +30,10 @@ function ProblemCell({ result }: {
       </div>
     )
   }
-  const wrong = result.attempts
   return (
     <div className="flex flex-col items-center">
       <span className="text-red-400 text-sm">✗</span>
-      <span className="text-red-400/60 text-[10px]">×{wrong}</span>
+      <span className="text-red-400/60 text-[10px]">×{result.attempts}</span>
     </div>
   )
 }
@@ -48,7 +49,6 @@ function exportCSV(participants: Participant[], frozen: boolean) {
     })
     return [p.rank, p.name, p.institution, p.solved, p.penalty, ...probCells]
   })
-
   const csv = [headers, ...rows].map((r) => r.join(',')).join('\n')
   const blob = new Blob([csv], { type: 'text/csv' })
   const url = URL.createObjectURL(blob)
@@ -59,10 +59,45 @@ function exportCSV(participants: Participant[], frozen: boolean) {
   URL.revokeObjectURL(url)
 }
 
+/** Track previous ranks per participant so we can detect movement direction */
+function useRankFlash(participants: Participant[], frozen: boolean) {
+  const prevRanks = useRef<Record<string, number>>({})
+  const [flashes, setFlashes] = useState<Record<string, 'up' | 'down' | null>>({})
+
+  useEffect(() => {
+    if (frozen) {
+      setFlashes({})
+      return
+    }
+    const newFlashes: Record<string, 'up' | 'down' | null> = {}
+    participants.forEach((p) => {
+      const prev = prevRanks.current[p.id]
+      if (prev !== undefined && prev !== p.rank) {
+        newFlashes[p.id] = p.rank < prev ? 'up' : 'down'
+      }
+    })
+    if (Object.keys(newFlashes).length > 0) {
+      setFlashes(newFlashes)
+      // Clear flashes after 1 second
+      const timer = setTimeout(() => setFlashes({}), 1000)
+      return () => clearTimeout(timer)
+    }
+    // Update previous ranks
+    participants.forEach((p) => { prevRanks.current[p.id] = p.rank })
+  }, [participants, frozen])
+
+  // Always sync prevRanks after render
+  useEffect(() => {
+    participants.forEach((p) => { prevRanks.current[p.id] = p.rank })
+  }, [participants])
+
+  return flashes
+}
+
 export function Leaderboard() {
   const { participants, frozenSnapshot, frozen } = useContestStore()
-
   const displayList = frozen && frozenSnapshot ? frozenSnapshot : participants
+  const flashes = useRankFlash(participants, frozen)
 
   return (
     <div className="space-y-4">
@@ -91,7 +126,7 @@ export function Leaderboard() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="border-b border-white/10">
                 <th className="py-2.5 px-3 text-left text-xs text-white/40 font-medium uppercase tracking-wider w-12">Rank</th>
@@ -108,31 +143,53 @@ export function Leaderboard() {
               </tr>
             </thead>
             <tbody>
-              {displayList.map((p: Participant) => (
-                <tr
-                  key={p.id}
-                  className={`border-b border-white/5 transition-colors ${
-                    p.rank <= 3
-                      ? ROW_HIGHLIGHTS[p.rank - 1]
-                      : 'hover:bg-white/5'
-                  }`}
-                >
-                  <td className="py-3 px-3">
-                    <span className="font-mono text-sm">
-                      {p.rank <= 3 ? MEDALS[p.rank - 1] : `#${p.rank}`}
-                    </span>
-                  </td>
-                  <td className="py-3 px-3 font-medium text-white/90 whitespace-nowrap">{p.name}</td>
-                  <td className="py-3 px-3 text-white/50 text-xs hidden sm:table-cell">{p.institution}</td>
-                  <td className="py-3 px-3 text-center font-bold font-mono text-[#E84545]">{p.solved}</td>
-                  <td className="py-3 px-3 text-center font-mono text-white/60">{p.penalty}</td>
-                  {PROBLEMS.map((prob) => (
-                    <td key={prob.id} className="py-3 px-3 text-center">
-                      <ProblemCell result={p.problemResults[prob.id]} />
-                    </td>
-                  ))}
-                </tr>
-              ))}
+              <AnimatePresence initial={false}>
+                {displayList.map((p: Participant) => {
+                  const flash = flashes[p.id]
+                  return (
+                    <motion.tr
+                      key={p.id}
+                      layout={!frozen ? 'position' : false}
+                      transition={!frozen ? { type: 'spring', stiffness: 300, damping: 30 } : undefined}
+                      className={`border-b border-white/5 transition-colors ${
+                        p.rank <= 3 ? ROW_HIGHLIGHTS[p.rank - 1] : ''
+                      } ${
+                        flash === 'up'
+                          ? 'bg-green-500/20'
+                          : flash === 'down'
+                          ? 'bg-red-500/20'
+                          : p.rank <= 3
+                          ? p.rank === 1
+                            ? 'bg-amber-500/10'
+                            : p.rank === 2
+                            ? 'bg-gray-400/10'
+                            : 'bg-orange-600/10'
+                          : 'hover:bg-white/5'
+                      }`}
+                      style={{
+                        transition: flash
+                          ? 'background-color 0s'
+                          : 'background-color 1s ease-out',
+                      }}
+                    >
+                      <td className="py-3 px-3">
+                        <span className="font-mono text-sm">
+                          {p.rank <= 3 ? MEDALS[p.rank - 1] : `#${p.rank}`}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 font-medium text-white/90 whitespace-nowrap">{p.name}</td>
+                      <td className="py-3 px-3 text-white/50 text-xs hidden sm:table-cell">{p.institution}</td>
+                      <td className="py-3 px-3 text-center font-bold font-mono text-[#E84545]">{p.solved}</td>
+                      <td className="py-3 px-3 text-center font-mono text-white/60">{p.penalty}</td>
+                      {PROBLEMS.map((prob) => (
+                        <td key={prob.id} className="py-3 px-3 text-center">
+                          <ProblemCell result={p.problemResults[prob.id]} />
+                        </td>
+                      ))}
+                    </motion.tr>
+                  )
+                })}
+              </AnimatePresence>
             </tbody>
           </table>
         </div>

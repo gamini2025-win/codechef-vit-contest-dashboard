@@ -7,11 +7,12 @@ import { useEffect } from 'react'
 interface TopbarProps {
   activeTab: string
   onTabChange: (tab: string) => void
+  onOpenPalette: () => void
 }
 
 const TABS = ['Dashboard', 'Participants', 'Submissions', 'Leaderboard']
 
-export function Topbar({ activeTab, onTabChange }: TopbarProps) {
+export function Topbar({ activeTab, onTabChange, onOpenPalette }: TopbarProps) {
   const { frozen, toggleFreeze, darkMode, toggleDarkMode } = useContestStore()
 
   // Keyboard shortcut F to freeze/unfreeze
@@ -29,7 +30,7 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
   }, [toggleFreeze])
 
   return (
-    <header className="sticky top-0 z-50 glass-card border-b border-white/10">
+    <header className="sticky top-0 z-50 border-b border-white/10" style={{ backgroundColor: 'rgba(10,10,15,0.97)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
       <div className="max-w-screen-2xl mx-auto px-4 py-3 flex items-center gap-4">
         {/* Logo */}
         <div className="flex items-center gap-2 mr-4">
@@ -61,6 +62,15 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
 
         {/* Actions */}
         <div className="flex items-center gap-2 ml-auto">
+          {/* CmdK hint */}
+          <button
+            onClick={onOpenPalette}
+            title="Open command palette (⌘K / Ctrl+K)"
+            className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-mono font-semibold text-white/40 bg-white/5 border border-white/10 hover:text-white/70 hover:bg-white/10 transition-colors"
+          >
+            <span>⌘K</span>
+          </button>
+
           {/* Live badge */}
           <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-full bg-green-500/20 border border-green-500/30">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />

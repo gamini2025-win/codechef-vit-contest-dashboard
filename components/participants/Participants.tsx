@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useContestStore } from '@/store/contestStore'
 import { Pagination } from '@/components/ui/Pagination'
 import { Search, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
@@ -17,10 +17,25 @@ function SortIcon({ col, sortKey, sortDir }: { col: SortKey; sortKey: SortKey; s
   return sortDir === 'asc' ? <ChevronUp className="w-3 h-3 text-[#E84545]" /> : <ChevronDown className="w-3 h-3 text-[#E84545]" />
 }
 
-export function Participants() {
+interface ParticipantsProps {
+  externalSearch?: string
+  onExternalSearchConsumed?: () => void
+}
+
+export function Participants({ externalSearch, onExternalSearchConsumed }: ParticipantsProps = {}) {
   const { participants } = useContestStore()
 
   const [search, setSearch] = useState('')
+
+  // When the command palette sends a participant name, apply it as search
+  useEffect(() => {
+    if (externalSearch) {
+      setSearch(externalSearch)
+      setPage(1)
+      onExternalSearchConsumed?.()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalSearch])
   const [filterInstitution, setFilterInstitution] = useState('All')
   const [filterMinSolved, setFilterMinSolved] = useState(0)
   const [filterMaxRank, setFilterMaxRank] = useState(Infinity)
