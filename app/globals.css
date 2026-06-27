@@ -198,35 +198,26 @@
   scrollbar-width: none;
 }
 
-/* Floating 3D shapes */
-@keyframes float {
-  0%, 100% { transform: translateY(0px) rotateX(0deg) rotateY(0deg); }
-  33%       { transform: translateY(-18px) rotateX(20deg) rotateY(15deg); }
-  66%       { transform: translateY(-8px) rotateX(-10deg) rotateY(30deg); }
+/* Orb pulse animation */
+@keyframes orb-pulse {
+  0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
+  50%       { opacity: 1;   transform: translate(-50%, -50%) scale(1.06); }
 }
 
-.shape-float {
-  animation: float linear infinite;
-  transform-style: preserve-3d;
+/* Scroll indicator */
+@keyframes scroll-down {
+  0%   { transform: translateY(-100%); opacity: 0; }
+  30%  { opacity: 1; }
+  100% { transform: translateY(200%); opacity: 0; }
 }
 
-.cube-3d {
-  --s: var(--cube-size, 28px);
-  width: var(--s);
-  height: var(--s);
-  background: linear-gradient(135deg, rgba(232,69,69,0.15), rgba(232,69,69,0.04));
-  border: 1px solid rgba(232,69,69,0.25);
-  border-radius: 3px;
-  transform: rotateX(30deg) rotateY(45deg);
-  box-shadow: 0 0 20px rgba(232,69,69,0.1);
+.animate-scroll-down {
+  animation: scroll-down 1.5s ease-in-out infinite;
 }
 
-.sphere-3d {
-  --s: var(--sphere-size, 24px);
-  width: var(--s);
-  height: var(--s);
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, rgba(232,69,69,0.3), rgba(232,69,69,0.05));
-  border: 1px solid rgba(232,69,69,0.2);
-  box-shadow: 0 0 16px rgba(232,69,69,0.1);
+/* Gradient shift for animated borders */
+@keyframes gradient-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
