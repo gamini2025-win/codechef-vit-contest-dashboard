@@ -1,6 +1,6 @@
 'use client'
 
-import { Lock, Unlock, Sun, Moon, Code2 } from 'lucide-react'
+import { Lock, Unlock, Sun, Moon } from 'lucide-react'
 import { useContestStore } from '@/store/contestStore'
 import { useEffect } from 'react'
 
@@ -33,10 +33,13 @@ export function Topbar({ activeTab, onTabChange, onOpenPalette }: TopbarProps) {
     <header className="sticky top-0 z-50 border-b border-white/10" style={{ backgroundColor: 'rgba(10,10,15,0.97)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
       <div className="max-w-screen-2xl mx-auto px-4 py-3 flex items-center gap-4">
         {/* Logo */}
-        <div className="flex items-center gap-2 mr-4">
-          <div className="w-8 h-8 rounded-lg bg-[#E84545] flex items-center justify-center shadow-lg shadow-[#E84545]/30">
-            <Code2 className="w-4 h-4 text-white" />
-          </div>
+        <div className="flex items-center gap-2.5 mr-4">
+          <img
+            src="/logo.png"
+            alt="CodeChef VIT Chapter logo"
+            className="rounded-md object-contain flex-shrink-0"
+            style={{ height: '38px', width: 'auto' }}
+          />
           <div className="hidden sm:block">
             <div className="text-sm font-bold gradient-text leading-none">CodeChef VIT</div>
             <div className="text-[10px] text-white/50 leading-none">Contest Control</div>
