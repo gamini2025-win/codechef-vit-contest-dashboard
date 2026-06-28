@@ -9,6 +9,10 @@ import { Dashboard } from '@/components/dashboard/Dashboard'
 import { Participants } from '@/components/participants/Participants'
 import { Submissions } from '@/components/submissions/Submissions'
 import { Leaderboard } from '@/components/leaderboard/Leaderboard'
+import { CompareUsers } from '@/components/compare/CompareUsers'
+import { Achievements } from '@/components/achievements/Achievements'
+import { AIInsights } from '@/components/insights/AIInsights'
+import { PerformanceDashboard } from '@/components/performance/PerformanceDashboard'
 import { PROBLEMS } from '@/lib/mockData'
 import type { Submission, Verdict, Language, Participant } from '@/types'
 
@@ -118,15 +122,19 @@ export default function Home() {
         />
 
         <main className="max-w-screen-2xl mx-auto w-full px-4 py-6">
-          {activeTab === 'Dashboard' && <Dashboard />}
+          {activeTab === 'Dashboard'    && <Dashboard />}
           {activeTab === 'Participants' && (
             <Participants
               externalSearch={participantSearch}
               onExternalSearchConsumed={() => setParticipantSearch('')}
             />
           )}
-          {activeTab === 'Submissions' && <Submissions />}
-          {activeTab === 'Leaderboard' && <Leaderboard />}
+          {activeTab === 'Submissions'  && <Submissions />}
+          {activeTab === 'Leaderboard'  && <Leaderboard />}
+          {activeTab === 'Compare'      && <CompareUsers />}
+          {activeTab === 'Achievements' && <Achievements />}
+          {activeTab === 'AI Insights'  && <AIInsights />}
+          {activeTab === 'Performance'  && <PerformanceDashboard />}
         </main>
       </div>
 
