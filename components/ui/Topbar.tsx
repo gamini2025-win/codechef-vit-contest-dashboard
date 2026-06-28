@@ -10,7 +10,16 @@ interface TopbarProps {
   onOpenPalette: () => void
 }
 
-const TABS = ['Dashboard', 'Participants', 'Submissions', 'Leaderboard']
+const TABS = [
+  'Dashboard',
+  'Participants',
+  'Submissions',
+  'Leaderboard',
+  'Compare',
+  'Achievements',
+  'AI Insights',
+  'Performance',
+]
 
 export function Topbar({ activeTab, onTabChange, onOpenPalette }: TopbarProps) {
   const { frozen, toggleFreeze, darkMode, toggleDarkMode } = useContestStore()
